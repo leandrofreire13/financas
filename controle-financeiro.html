@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle Financeiro — 2027</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-bg: #12181A;
+    --ink-bg-raised: #1A2225;
+    --ink-bg-card: #1E2729;
+    --ink-line: #34413F;
+    --paper: #EDEAE1;
+    --paper-dim: #A6ADA6;
+    --gold: #C9A24B;
+    --gold-dim: #8A7638;
+    --green: #5FA678;
+    --rust: #C0644A;
+    --radius: 3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--ink-bg);
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(201,162,75,0.06), transparent 40%),
+      radial-gradient(circle at 90% 30%, rgba(95,166,120,0.05), transparent 35%);
+    color: var(--paper);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 80px 0;
+  }
+  .mono{ font-family: 'IBM Plex Mono', monospace; }
+  .serif{ font-family: 'Fraunces', serif; }
+
+  /* ===== Header / Ledger stamp ===== */
+  header{
+    padding: 40px 32px 28px;
+    max-width: 1180px;
+    margin: 0 auto;
+    display:flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 24px;
+    border-bottom: 1px solid var(--ink-line);
+  }
+  .brand-eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight: 600;
+    font-size: 34px;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .stamp{
+    border: 1px solid var(--gold-dim);
+    border-radius: 50%;
+    width: 132px;
+    height: 132px;
+    display:flex;
+    flex-direction: column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    position: relative;
+    transform: rotate(-6deg);
+    flex-shrink: 0;
+  }
+  .stamp::before{
+    content:'';
+    position:absolute;
+    inset: 6px;
+    border: 1px dashed var(--gold-dim);
+    border-radius: 50%;
+    opacity: 0.6;
+  }
+  .stamp .label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+  .stamp .value{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--paper);
+    line-height:1.2;
+  }
+  .stamp.neg .value{ color: var(--rust); }
+  .stamp.pos .value{ color: var(--green); }
+
+  main{ max-width: 1180px; margin: 0 auto; padding: 28px 32px 0; }
+
+  /* ===== Month tabs ===== */
+  .month-tabs{
+    display:flex;
+    overflow-x:auto;
+    gap: 2px;
+    margin-bottom: 24px;
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius);
+    background: var(--ink-bg-raised);
+    padding: 3px;
+  }
+  .month-tab{
+    flex: 1 0 auto;
+    padding: 9px 12px;
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--paper-dim);
+    background: transparent;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s, color .15s;
+  }
+  .month-tab:hover{ color: var(--paper); }
+  .month-tab.active{
+    background: var(--gold);
+    color: #17201F;
+    font-weight: 600;
+  }
+
+  /* ===== Summary row ===== */
+  .summary-row{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .summary-card{
+    background: var(--ink-bg-card);
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+  .summary-card .label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--paper-dim);
+    margin-bottom: 8px;
+  }
+  .summary-card .num{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 21px;
+    font-weight: 600;
+  }
+  .summary-card.income .num{ color: var(--green); }
+  .summary-card.expense .num{ color: var(--paper); }
+  .summary-card.balance .num.neg{ color: var(--rust); }
+  .summary-card.balance .num.pos{ color: var(--green); }
+  .summary-card input.income-input{
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--ink-line);
+    color: var(--green);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 21px;
+    font-weight: 600;
+    width: 100%;
+    padding: 2px 0;
+  }
+  .summary-card input.income-input:focus{ outline:none; border-bottom-color: var(--gold); }
+
+  /* ===== Layout: ledger + side panel ===== */
+  .layout{ display:grid; grid-template-columns: 1.55fr 1fr; gap: 20px; align-items:start; }
+  @media (max-width: 900px){ .layout{ grid-template-columns: 1fr; } }
+
+  .panel{
+    background: var(--ink-bg-card);
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .panel-head{
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--ink-line);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .panel-head h2{
+    font-family:'Fraunces', serif;
+    font-size: 17px;
+    font-weight: 600;
+    margin:0;
+  }
+  .panel-body{ padding: 6px 0; }
+
+  .group{ border-bottom: 1px solid var(--ink-line); }
+  .group:last-child{ border-bottom:none; }
+  .group-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding: 12px 18px 8px;
+  }
+  .group-head .name{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  .group-head .subtotal{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--paper-dim);
+  }
+  .item-row{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 6px 18px;
+    gap: 10px;
+  }
+  .item-row:hover{ background: rgba(255,255,255,0.02); }
+  .item-name{
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--paper);
+    font-size: 13.5px;
+    padding: 4px 2px;
+    border-bottom: 1px solid transparent;
+  }
+  .item-name:focus{ outline:none; border-bottom-color: var(--ink-line); }
+  .item-value{
+    width: 128px;
+    text-align: right;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    color: var(--paper);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 13px;
+    padding: 4px 2px;
+  }
+  .item-value:focus{ outline:none; border-bottom-color: var(--gold); background: rgba(201,162,75,0.06); }
+  .item-del{
+    background:none; border:none; color: var(--paper-dim); cursor:pointer;
+    font-size: 15px; line-height:1; padding: 2px 4px; opacity: 0.5;
+  }
+  .item-del:hover{ color: var(--rust); opacity:1; }
+  .add-item-row{ padding: 6px 18px 14px; }
+  .add-item-btn, .add-group-btn{
+    background: none;
+    border: 1px dashed var(--ink-line);
+    color: var(--paper-dim);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 2px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+  }
+  .add-item-btn:hover, .add-group-btn:hover{ color: var(--gold); border-color: var(--gold-dim); }
+  .add-group-wrap{ padding: 14px 18px; }
+
+  .grand-total{
+    display:flex; justify-content:space-between; align-items:center;
+    padding: 14px 18px;
+    background: var(--ink-bg-raised);
+    border-top: 1px solid var(--ink-line);
+  }
+  .grand-total .name{ font-family:'Fraunces', serif; font-size:15px; font-weight:600; }
+  .grand-total .num{ font-family:'IBM Plex Mono', monospace; font-size:17px; font-weight:600; color: var(--gold); }
+
+  /* ===== Side: limits + charts ===== */
+  .side-stack{ display:flex; flex-direction: column; gap: 20px; }
+
+  .limit-row{ padding: 10px 18px; border-bottom: 1px solid var(--ink-line); }
+  .limit-row:last-child{ border-bottom: none; }
+  .limit-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .limit-top .name{ font-family:'IBM Plex Mono', monospace; font-size: 11px; letter-spacing:0.06em; text-transform:uppercase; color: var(--paper-dim); }
+  .limit-top .figs{ font-family:'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--paper-dim); display:flex; align-items:center; gap:6px; }
+  .limit-top input.limit-input{
+    width: 78px; text-align:right; background: transparent; border:none; border-bottom:1px solid var(--ink-line);
+    color: var(--paper); font-family:'IBM Plex Mono', monospace; font-size: 11.5px; padding: 1px 0;
+  }
+  .limit-top input.limit-input:focus{ outline:none; border-bottom-color: var(--gold); }
+  .bar-track{ height: 6px; background: var(--ink-bg-raised); border-radius: 4px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:4px; transition: width .25s ease; }
+
+  .chart-wrap{ padding: 16px 18px 20px; }
+
+  footer{
+    max-width: 1180px; margin: 40px auto 0; padding: 18px 32px 0;
+    border-top: 1px solid var(--ink-line);
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+  }
+  footer .note{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--paper-dim); }
+  .export-btn{
+    background: none; border: 1px solid var(--ink-line); color: var(--paper-dim);
+    font-family:'IBM Plex Mono', monospace; font-size: 11px; letter-spacing:0.06em;
+    padding: 8px 14px; border-radius: 2px; cursor:pointer; text-transform:uppercase;
+  }
+  .export-btn:hover{ color: var(--gold); border-color: var(--gold-dim); }
+
+  ::-webkit-scrollbar{ height: 6px; }
+  ::-webkit-scrollbar-thumb{ background: var(--ink-line); border-radius: 3px; }
+
+  /* ===== Sync UI ===== */
+  .sync-status{
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--paper-dim);
+    margin-bottom: 6px;
+  }
+  .sync-status.ok{ color: var(--green); }
+  .sync-status.busy{ color: var(--gold); }
+  .sync-status.err{ color: var(--rust); }
+  .settings-btn{
+    background:none; border:1px solid var(--ink-line); color: var(--paper-dim);
+    font-family:'IBM Plex Mono', monospace; font-size: 10px; padding: 5px 9px;
+    border-radius: 2px; cursor:pointer;
+  }
+  .settings-btn:hover{ color: var(--gold); border-color: var(--gold-dim); }
+  .settings-overlay{
+    display:none; position: fixed; inset:0; background: rgba(10,14,15,0.75);
+    align-items:center; justify-content:center; z-index: 50; padding: 20px;
+  }
+  .settings-overlay.open{ display:flex; }
+  .settings-modal{
+    background: var(--ink-bg-card); border:1px solid var(--ink-line); border-radius: var(--radius);
+    padding: 24px; max-width: 460px; width:100%;
+  }
+  .settings-modal h3{ font-family:'Fraunces', serif; margin:0 0 10px; font-size:18px; }
+  .settings-modal p{ font-size: 13px; color: var(--paper-dim); line-height:1.5; margin:0 0 14px; }
+  .settings-modal input{
+    width:100%; background: var(--ink-bg-raised); border:1px solid var(--ink-line); color: var(--paper);
+    padding: 9px 10px; border-radius: 2px; font-size: 12px; margin-bottom: 16px;
+  }
+  .settings-modal input:focus{ outline:none; border-color: var(--gold-dim); }
+  .settings-actions{ display:flex; justify-content:flex-end; gap: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand-eyebrow">Livro-caixa pessoal &middot; ano 2027</div>
+    <h1>Controle Financeiro</h1>
+  </div>
+  <div style="display:flex; align-items:center; gap:14px;">
+    <div style="text-align:right;">
+      <div class="sync-status mono" id="syncStatus">não conectado</div>
+      <button class="settings-btn" id="settingsBtn">⚙ configurar planilha</button>
+    </div>
+    <div class="stamp" id="stampEl">
+      <div class="label">Saldo acum.</div>
+      <div class="value" id="stampValue">R$ 0</div>
+    </div>
+  </div>
+</header>
+
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-modal">
+    <h3>Sincronizar com o Google Sheets</h3>
+    <p>Cole aqui a URL do App da Web gerada no Apps Script da sua planilha (termina em <span class="mono">/exec</span>).</p>
+    <input type="text" id="urlInput" class="mono" placeholder="https://script.google.com/macros/s/.../exec" />
+    <div class="settings-actions">
+      <button class="export-btn" id="cancelSettingsBtn">Cancelar</button>
+      <button class="add-item-btn" id="saveSettingsBtn">Salvar e sincronizar</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="month-tabs" id="monthTabs"></div>
+
+  <div class="summary-row">
+    <div class="summary-card expense">
+      <div class="label">Total do mês</div>
+      <div class="num" id="sumExpense">R$ 0,00</div>
+    </div>
+    <div class="summary-card income">
+      <div class="label">Receita do mês</div>
+      <input class="income-input mono" id="incomeInput" type="text" value="0" />
+    </div>
+    <div class="summary-card balance">
+      <div class="label">Saldo do mês</div>
+      <div class="num" id="sumBalance">R$ 0,00</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Saldo acumulado (jan&rarr;mês)</div>
+      <div class="num" id="sumAccum">R$ 0,00</div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Lançamentos do mês</h2>
+      </div>
+      <div class="panel-body" id="groupsWrap"></div>
+      <div class="add-group-wrap">
+        <button class="add-group-btn" id="addGroupBtn">+ novo grupo de gasto</button>
+      </div>
+      <div class="grand-total">
+        <div class="name">Total mensal</div>
+        <div class="num" id="grandTotal">R$ 0,00</div>
+      </div>
+    </div>
+
+    <div class="side-stack">
+      <div class="panel">
+        <div class="panel-head"><h2>Limites por grupo</h2></div>
+        <div class="panel-body" id="limitsWrap"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Distribuição do mês</h2></div>
+        <div class="chart-wrap"><canvas id="pieChart" height="220"></canvas></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Saldo acumulado — 2027</h2></div>
+        <div class="chart-wrap"><canvas id="lineChart" height="200"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="note">Dados salvos automaticamente neste navegador &middot; base inicial: sua planilha 2027</div>
+    <div style="display:flex; gap:8px;">
+      <button class="export-btn" id="exportBtn">Exportar JSON</button>
+      <button class="export-btn" id="resetBtn">Restaurar dados originais</button>
+    </div>
+  </footer>
+</main>
+
+<script>
+const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const STORAGE_KEY = "controle_financeiro_2027_v1";
+
+// ---- Seed data, transcribed from the user's spreadsheet (2027) ----
+function seedData(){
+  return {
+    income: Array(12).fill(50000),
+    groups: [
+      { name: "Investimentos", items: [
+        { name: "Reserva", values: arr(7000) }
+      ]},
+      { name: "Fixo", items: [
+        { name: "Contas de casa", values: arr(3000) },
+        { name: "Consignados", values: arr(500) },
+        { name: "Doação", values: arr(100) }
+      ]},
+      { name: "Cartão de crédito", items: [
+        { name: "Fatura", values: arr(10000) }
+      ]},
+      { name: "Saúde", items: [
+        { name: "Dentista", values: arr(500) }
+      ]},
+      { name: "Viagem", items: [
+        { name: "Fundo de viagem", values: arr(5000) }
+      ]},
+      { name: "Moradia", items: [
+        { name: "Financiamento / Aluguel", values: arr(7700) },
+        { name: "Condomínio", values: arr(1300) },
+        { name: "IPTU", values: arr(200) },
+        { name: "Água", values: arr(150) },
+        { name: "Luz", values: arr(250) },
+        { name: "Internet", values: arr(200) },
+        { name: "Mercado", values: arr(3000) },
+        { name: "Diarista", values: arr(1600) }
+      ]},
+      { name: "Victória", items: [
+        { name: "Mesada", values: [5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,500] },
+        { name: "Convênio médico", values: arr(355.57) },
+        { name: "Airpod max", values: [250,250,250,250,250,0,0,0,0,0,0,0] },
+        { name: "Presentes", values: arr(0) }
+      ]},
+      { name: "Dívida", items: [
+        { name: "Picpay mãe", values: arr(200) },
+        { name: "Itaú", values: arr(38.47) },
+        { name: "Santander", values: arr(12.36) },
+        { name: "Carrefour", values: arr(622.28) },
+        { name: "Nubank", values: arr(194.22) },
+        { name: "Itaú (2)", values: arr(25.63) },
+        { name: "Super sim", values: [68.17,68.17,68.17,68.17,68.17,68.17,68.17,68.17,68.17,68.17,68.17,0] },
+        { name: "Picpay", values: [28,28,28,28,28,28,28,28,28,0,0,0] },
+        { name: "Inter", values: [65.94,65.94,65.94,65.94,0,0,0,0,0,0,0,0] }
+      ]}
+    ],
+    // editable per-group monthly limits (the sheet's original "Limites" table used categories
+    // — Empresa, Mãe, Diversos, Educação, Carro — that don't map to these real groups, and its
+    // formulas were broken (#REF!), so these are fresh suggested starting limits you can edit.
+    limits: {
+      "Investimentos": 7000,
+      "Fixo": 4000,
+      "Cartão de crédito": 10000,
+      "Saúde": 1500,
+      "Viagem": 5000,
+      "Moradia": 15000,
+      "Victória": 6000,
+      "Dívida": 1500
+    }
+  };
+  function arr(v){ return Array(12).fill(v); }
+}
+
+const CONFIG_KEY = "controle_financeiro_2027_webapp_url";
+let state = load();
+let pushTimer = null;
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return seedData();
+}
+function save(pushToSheet){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  if(pushToSheet !== false) schedulePush();
+}
+
+function getWebAppUrl(){ return localStorage.getItem(CONFIG_KEY) || ''; }
+function setWebAppUrl(url){ localStorage.setItem(CONFIG_KEY, url); }
+
+function setSyncStatus(kind, text){
+  const el = document.getElementById('syncStatus');
+  el.className = 'sync-status mono' + (kind ? ' ' + kind : '');
+  el.textContent = text;
+}
+
+// Debounced push to the Apps Script Web App, so we don't fire a request on every keystroke.
+function schedulePush(){
+  const url = getWebAppUrl();
+  if(!url) return;
+  clearTimeout(pushTimer);
+  setSyncStatus('busy', 'sincronizando…');
+  pushTimer = setTimeout(() => pushRemote(url), 900);
+}
+
+function pushRemote(url){
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight on Apps Script
+    body: JSON.stringify(state)
+  })
+    .then(r => r.json())
+    .then(res => {
+      if(res && res.ok) setSyncStatus('ok', 'sincronizado ✓');
+      else setSyncStatus('err', 'erro ao sincronizar');
+    })
+    .catch(() => setSyncStatus('err', 'erro de conexão'));
+}
+
+function fetchRemote(url){
+  setSyncStatus('busy', 'carregando da planilha…');
+  return fetch(url)
+    .then(r => r.json())
+    .then(remote => {
+      if(remote && remote.groups && remote.groups.length){
+        state = remote;
+        save(false);
+        setSyncStatus('ok', 'sincronizado ✓');
+      } else {
+        // planilha vazia: envia os dados atuais para popular ela
+        pushRemote(url);
+      }
+      renderAll();
+    })
+    .catch(() => setSyncStatus('err', 'não foi possível conectar'));
+}
+
+let currentMonth = 0;
+
+function fmt(n){
+  n = isFinite(n) ? n : 0;
+  return "R$ " + n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function monthTotal(m){
+  let t = 0;
+  state.groups.forEach(g => g.items.forEach(it => t += (Number(it.values[m])||0)));
+  return t;
+}
+function groupTotal(g, m){
+  return g.items.reduce((s,it)=> s + (Number(it.values[m])||0), 0);
+}
+function accumBalance(uptoMonth){
+  let acc = 0;
+  for(let m=0; m<=uptoMonth; m++){
+    acc += (Number(state.income[m])||0) - monthTotal(m);
+  }
+  return acc;
+}
+
+// ===== Render: month tabs =====
+function renderTabs(){
+  const wrap = document.getElementById('monthTabs');
+  wrap.innerHTML = '';
+  MONTHS.forEach((m,i)=>{
+    const b = document.createElement('button');
+    b.className = 'month-tab' + (i===currentMonth ? ' active':'');
+    b.textContent = m.slice(0,3);
+    b.onclick = () => { currentMonth = i; renderAll(); };
+    wrap.appendChild(b);
+  });
+}
+
+// ===== Render: groups/items =====
+function renderGroups(){
+  const wrap = document.getElementById('groupsWrap');
+  wrap.innerHTML = '';
+  state.groups.forEach((g, gi) => {
+    const gEl = document.createElement('div');
+    gEl.className = 'group';
+
+    const head = document.createElement('div');
+    head.className = 'group-head';
+    head.innerHTML = `<span class="name">${g.name}</span><span class="subtotal mono">${fmt(groupTotal(g, currentMonth))}</span>`;
+    gEl.appendChild(head);
+
+    g.items.forEach((it, ii) => {
+      const row = document.createElement('div');
+      row.className = 'item-row';
+
+      const nameInp = document.createElement('input');
+      nameInp.className = 'item-name';
+      nameInp.value = it.name;
+      nameInp.onchange = e => { it.name = e.target.value; save(); };
+
+      const valInp = document.createElement('input');
+      valInp.className = 'item-value mono';
+      valInp.value = (Number(it.values[currentMonth])||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+      valInp.onfocus = e => { e.target.value = (Number(it.values[currentMonth])||0); };
+      valInp.onchange = e => {
+        const v = parseFloat(String(e.target.value).replace(/\./g,'').replace(',','.')) || 0;
+        it.values[currentMonth] = v;
+        save(); renderAll();
+      };
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'item-del';
+      delBtn.textContent = '×';
+      delBtn.title = 'Remover item';
+      delBtn.onclick = () => { g.items.splice(ii,1); save(); renderAll(); };
+
+      row.appendChild(nameInp);
+      row.appendChild(valInp);
+      row.appendChild(delBtn);
+      gEl.appendChild(row);
+    });
+
+    const addRow = document.createElement('div');
+    addRow.className = 'add-item-row';
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-item-btn';
+    addBtn.textContent = '+ item';
+    addBtn.onclick = () => {
+      g.items.push({ name: 'Novo item', values: Array(12).fill(0) });
+      save(); renderAll();
+    };
+    addRow.appendChild(addBtn);
+    gEl.appendChild(addRow);
+
+    wrap.appendChild(gEl);
+  });
+}
+
+// ===== Render: limits =====
+function renderLimits(){
+  const wrap = document.getElementById('limitsWrap');
+  wrap.innerHTML = '';
+  state.groups.forEach(g => {
+    const spent = groupTotal(g, currentMonth);
+    const limit = Number(state.limits[g.name]) || 0;
+    const pct = limit > 0 ? Math.min(100, (spent/limit)*100) : (spent>0 ? 100 : 0);
+    let color = 'var(--green)';
+    if(limit>0 && spent > limit) color = 'var(--rust)';
+    else if(limit>0 && spent/limit > 0.85) color = 'var(--gold)';
+
+    const row = document.createElement('div');
+    row.className = 'limit-row';
+    row.innerHTML = `
+      <div class="limit-top">
+        <span class="name">${g.name}</span>
+        <span class="figs">
+          <span class="mono">${fmt(spent)} /</span>
+          <input class="limit-input mono" data-group="${g.name}" value="${limit.toLocaleString('pt-BR')}" />
+        </span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${color};"></div></div>
+    `;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('.limit-input').forEach(inp=>{
+    inp.onchange = e => {
+      const v = parseFloat(String(e.target.value).replace(/\./g,'').replace(',','.')) || 0;
+      state.limits[e.target.dataset.group] = v;
+      save(); renderLimits();
+    };
+  });
+}
+
+// ===== Render: summary =====
+function renderSummary(){
+  const total = monthTotal(currentMonth);
+  const income = Number(state.income[currentMonth]) || 0;
+  const balance = income - total;
+  const accum = accumBalance(currentMonth);
+
+  document.getElementById('sumExpense').textContent = fmt(total);
+  document.getElementById('grandTotal').textContent = fmt(total);
+
+  const incomeInp = document.getElementById('incomeInput');
+  if(document.activeElement !== incomeInp){
+    incomeInp.value = income.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+
+  const balEl = document.getElementById('sumBalance');
+  balEl.textContent = fmt(balance);
+  balEl.className = 'num ' + (balance < 0 ? 'neg' : 'pos');
+
+  document.getElementById('sumAccum').textContent = fmt(accum);
+
+  const stampEl = document.getElementById('stampEl');
+  const stampVal = document.getElementById('stampValue');
+  stampVal.textContent = fmt(accum);
+  stampEl.className = 'stamp ' + (accum < 0 ? 'neg' : 'pos');
+}
+
+// ===== Charts =====
+let pieChart, lineChart;
+function renderCharts(){
+  const labels = state.groups.map(g=>g.name);
+  const data = state.groups.map(g=>groupTotal(g,currentMonth));
+  const palette = ['#C9A24B','#5FA678','#7C93C4','#C0644A','#B08BC7','#4FAFB0','#D0A85C','#8AA6A0'];
+
+  const pieCtx = document.getElementById('pieChart');
+  if(pieChart) pieChart.destroy();
+  pieChart = new Chart(pieCtx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: palette, borderColor: '#1E2729', borderWidth: 2 }] },
+    options: {
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#A6ADA6', font: { family: 'IBM Plex Mono', size: 10 }, boxWidth: 10, padding: 10 } }
+      },
+      cutout: '62%'
+    }
+  });
+
+  const lineLabels = MONTHS.map(m=>m.slice(0,3));
+  const lineData = MONTHS.map((_,i)=>accumBalance(i));
+  const lineCtx = document.getElementById('lineChart');
+  if(lineChart) lineChart.destroy();
+  lineChart = new Chart(lineCtx, {
+    type: 'line',
+    data: {
+      labels: lineLabels,
+      datasets: [{
+        data: lineData,
+        borderColor: '#C9A24B',
+        backgroundColor: 'rgba(201,162,75,0.12)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+        pointBackgroundColor: '#C9A24B'
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#A6ADA6', font: { family: 'IBM Plex Mono', size: 10 } }, grid: { color: '#34413F' } },
+        y: { ticks: { color: '#A6ADA6', font: { family: 'IBM Plex Mono', size: 10 } }, grid: { color: '#34413F' } }
+      }
+    }
+  });
+}
+
+function renderAll(){
+  renderTabs();
+  renderGroups();
+  renderLimits();
+  renderSummary();
+  renderCharts();
+}
+
+document.getElementById('incomeInput').onchange = e => {
+  const v = parseFloat(String(e.target.value).replace(/\./g,'').replace(',','.')) || 0;
+  state.income[currentMonth] = v;
+  save(); renderAll();
+};
+
+document.getElementById('addGroupBtn').onclick = () => {
+  const name = prompt('Nome do novo grupo:');
+  if(!name) return;
+  state.groups.push({ name, items: [{ name: 'Novo item', values: Array(12).fill(0) }] });
+  state.limits[name] = 0;
+  save(); renderAll();
+};
+
+document.getElementById('exportBtn').onclick = () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'controle-financeiro-2027.json';
+  a.click(); URL.revokeObjectURL(url);
+};
+
+document.getElementById('resetBtn').onclick = () => {
+  if(confirm('Isso vai apagar os dados salvos neste navegador e restaurar os valores originais da planilha. Continuar?')){
+    state = seedData();
+    save(); renderAll();
+  }
+};
+
+// ===== Settings modal =====
+const overlay = document.getElementById('settingsOverlay');
+document.getElementById('settingsBtn').onclick = () => {
+  document.getElementById('urlInput').value = getWebAppUrl();
+  overlay.classList.add('open');
+};
+document.getElementById('cancelSettingsBtn').onclick = () => overlay.classList.remove('open');
+overlay.onclick = (e) => { if(e.target === overlay) overlay.classList.remove('open'); };
+document.getElementById('saveSettingsBtn').onclick = () => {
+  const url = document.getElementById('urlInput').value.trim();
+  setWebAppUrl(url);
+  overlay.classList.remove('open');
+  if(url) fetchRemote(url);
+  else setSyncStatus('', 'não conectado');
+};
+
+renderAll();
+
+// Se já houver uma planilha configurada, sincroniza ao abrir.
+const savedUrl = getWebAppUrl();
+if(savedUrl) fetchRemote(savedUrl);
+else setSyncStatus('', 'não conectado');
+</script>
+</body>
+</html>
