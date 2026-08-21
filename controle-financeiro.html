@@ -414,8 +414,8 @@
 <div class="settings-overlay" id="settingsOverlay">
   <div class="settings-modal">
     <h3>Sincronizar com o Google Sheets</h3>
-    <p>Cole aqui a URL do App da Web gerada no Apps Script da sua planilha (termina em <span class="mono">/exec</span>).</p>
-    <input type="text" id="urlInput" class="mono" placeholder="https://script.google.com/macros/s/.../exec" />
+    <p>Esta versão está vinculada permanentemente à planilha configurada.</p>
+    <input type="text" id="urlInput" class="mono" readonly />
     <div class="settings-actions">
       <button class="export-btn" id="cancelSettingsBtn">Cancelar</button>
       <button class="add-item-btn" id="saveSettingsBtn">Salvar e sincronizar</button>
@@ -558,7 +558,8 @@ function seedData(){
   function arr(v){ return Array(12).fill(v); }
 }
 
-const CONFIG_KEY = "controle_financeiro_2027_webapp_url";
+// URL fixa da planilha: funciona em qualquer navegador, sem configuração local.
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwE4lhs6kutd-5BkO9B9QPr-DkMdH8l1cQrvI88E8LhqsWcGOkvnCix4uXSpUhTdm2I/exec";
 let state = load();
 let pushTimer = null;
 
@@ -574,8 +575,7 @@ function save(pushToSheet){
   if(pushToSheet !== false) schedulePush();
 }
 
-function getWebAppUrl(){ return localStorage.getItem(CONFIG_KEY) || ''; }
-function setWebAppUrl(url){ localStorage.setItem(CONFIG_KEY, url); }
+function getWebAppUrl(){ return WEB_APP_URL; }
 
 function setSyncStatus(kind, text){
   const el = document.getElementById('syncStatus');
@@ -877,19 +877,14 @@ document.getElementById('settingsBtn').onclick = () => {
 document.getElementById('cancelSettingsBtn').onclick = () => overlay.classList.remove('open');
 overlay.onclick = (e) => { if(e.target === overlay) overlay.classList.remove('open'); };
 document.getElementById('saveSettingsBtn').onclick = () => {
-  const url = document.getElementById('urlInput').value.trim();
-  setWebAppUrl(url);
   overlay.classList.remove('open');
-  if(url) fetchRemote(url);
-  else setSyncStatus('', 'não conectado');
+  fetchRemote(WEB_APP_URL);
 };
 
 renderAll();
 
-// Se já houver uma planilha configurada, sincroniza ao abrir.
-const savedUrl = getWebAppUrl();
-if(savedUrl) fetchRemote(savedUrl);
-else setSyncStatus('', 'não conectado');
+// Sincroniza automaticamente com a planilha fixa ao abrir.
+fetchRemote(WEB_APP_URL);
 </script>
 </body>
 </html>
