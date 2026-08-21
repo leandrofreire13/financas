@@ -257,10 +257,11 @@
   }
   .item-value:focus{ outline:none; border-bottom-color: var(--gold); background: rgba(201,162,75,0.06); }
   .item-del{
-    background:none; border:none; color: var(--paper-dim); cursor:pointer;
-    font-size: 15px; line-height:1; padding: 2px 4px; opacity: 0.5;
+    background:rgba(255,123,114,0.08); border:1px solid rgba(255,123,114,0.2); color: var(--paper-dim); cursor:pointer;
+    font-size: 14px; line-height:1; padding: 5px 7px; border-radius: 7px; opacity: 0.8;
+    transition: background .2s, border-color .2s, color .2s, transform .2s;
   }
-  .item-del:hover{ color: var(--rust); opacity:1; }
+  .item-del:hover{ color: var(--rust); opacity:1; background:rgba(255,123,114,0.16); border-color:var(--rust); transform:scale(1.06); }
   .add-item-row{ padding: 6px 18px 14px; }
   .add-item-btn, .add-group-btn{
     background: none;
@@ -353,6 +354,42 @@
   }
   .settings-modal input:focus{ outline:none; border-color: var(--gold-dim); }
   .settings-actions{ display:flex; justify-content:flex-end; gap: 10px; }
+  /* Contemporary visual layer */
+  :root{
+    --ink-bg:#09131f; --ink-bg-raised:#112131; --ink-bg-card:rgba(18,35,51,.84);
+    --ink-line:rgba(181,208,225,.14); --paper:#f4f8fc; --paper-dim:#a9bbca;
+    --gold:#f6c75a; --gold-dim:#ae8030; --green:#53d39a; --rust:#ff7b72;
+    --blue:#6ca8ff; --radius:18px; --shadow:0 18px 55px rgba(0,0,0,.22);
+  }
+  body{
+    background-image:radial-gradient(circle at 12% -10%,rgba(72,133,255,.23),transparent 31%),radial-gradient(circle at 100% 18%,rgba(83,211,154,.13),transparent 28%),linear-gradient(135deg,#09131f 0%,#0c1b2a 55%,#0a1622 100%);
+    padding-bottom:64px;
+  }
+  header{padding-top:36px; padding-bottom:30px;}
+  h1{font-size:clamp(30px,4vw,42px);}
+  .brand-eyebrow,.group-head .name{color:#8bb6ff;}
+  .stamp{width:116px;height:116px;border-color:rgba(246,199,90,.55);background:radial-gradient(circle at 30% 28%,rgba(246,199,90,.17),rgba(246,199,90,.03));box-shadow:0 8px 30px rgba(0,0,0,.18);transform:rotate(-4deg);}
+  .month-tabs{gap:4px;padding:5px;border-radius:14px;background:rgba(8,20,32,.52);backdrop-filter:blur(16px);}
+  .month-tab{border-radius:10px;transition:background .2s,color .2s,transform .2s;}
+  .month-tab.active{background:linear-gradient(135deg,#ffe08a,var(--gold));color:#17202b;box-shadow:0 4px 12px rgba(246,199,90,.18);}
+  .summary-row{gap:16px;}
+  .summary-card{padding:18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform .2s,border-color .2s;}
+  .summary-card::before{content:'';position:absolute;inset:0 auto 0 0;width:3px;background:var(--blue);opacity:.8;}
+  .summary-card.income::before{background:var(--green);}.summary-card.expense::before{background:var(--gold);}.summary-card.balance::before{background:#bc93ff;}
+  .summary-card:hover{transform:translateY(-2px);border-color:rgba(181,208,225,.25);}
+  .panel{box-shadow:var(--shadow);backdrop-filter:blur(18px);}
+  .panel-head{padding:16px 20px;}.panel-head h2{font-size:18px;}.panel-body{padding:8px 0;}
+  .group-head{padding:16px 20px 8px;}.item-row{padding:7px 20px;}.item-row:hover{background:rgba(139,182,255,.06);}
+  .item-name{border-radius:5px;}.item-name:focus{border-bottom-color:var(--blue);background:rgba(108,168,255,.06);}
+  .item-value:focus{border-bottom-color:var(--gold);background:rgba(246,199,90,.08);}
+  .add-item-row{padding:9px 20px 16px;}.add-group-wrap{padding:16px 20px;}
+  .add-item-btn,.add-group-btn{border-color:rgba(169,187,202,.36);border-radius:8px;}
+  .grand-total{padding:16px 20px;background:linear-gradient(90deg,rgba(108,168,255,.09),rgba(246,199,90,.07));}
+  .limit-row{padding:12px 20px;}.bar-track{height:7px;background:rgba(6,14,23,.58);border-radius:99px;}.chart-wrap{padding:16px 20px 20px;}
+  .export-btn{border-radius:9px;transition:all .2s ease;}.export-btn:hover{color:var(--paper);border-color:var(--blue);background:rgba(108,168,255,.08);transform:translateY(-1px);}
+  .settings-btn{border-radius:8px;}.settings-modal{background:#132638;border-color:rgba(181,208,225,.22);border-radius:20px;padding:26px;box-shadow:0 28px 80px rgba(0,0,0,.48);}.settings-modal input{border-radius:9px;padding:10px 12px;}
+  @media (max-width:700px){header,main,footer{padding-left:16px;padding-right:16px;}header{padding-top:24px;align-items:center;}.stamp{width:92px;height:92px;}.stamp .value{font-size:12px;}.summary-row{grid-template-columns:repeat(2,1fr);gap:10px;}.summary-card{padding:14px;}.summary-card .num,.summary-card input.income-input{font-size:16px;}.item-row{padding-left:14px;padding-right:14px;}.group-head,.panel-head,.limit-row,.chart-wrap,.add-item-row,.add-group-wrap,.grand-total{padding-left:14px;padding-right:14px;}.item-value{width:100px;}}
+  @media (max-width:420px){.summary-row{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -657,8 +694,9 @@ function renderGroups(){
 
       const delBtn = document.createElement('button');
       delBtn.className = 'item-del';
-      delBtn.textContent = '×';
+      delBtn.textContent = '🗑';
       delBtn.title = 'Remover item';
+      delBtn.setAttribute('aria-label', 'Remover item');
       delBtn.onclick = () => { g.items.splice(ii,1); save(); renderAll(); };
 
       row.appendChild(nameInp);
